@@ -9,9 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 
 public class GestorAcademico implements ServiciosAcademicosI{
-    private List<Estudiante> estudiantes;
-    private List<Curso> cursos;
-    private HashMap<Integer, List<Integer>> inscripciones;
+    private ArrayList<Estudiante> estudiantes;
+    private ArrayList<Curso> cursos;
+    private HashMap<Integer, ArrayList<Estudiante>> inscripciones;
 
     public GestorAcademico() {
         this.estudiantes = new ArrayList<>();
@@ -20,74 +20,53 @@ public class GestorAcademico implements ServiciosAcademicosI{
     }
 
     @Override
-    public void matricularEstudiante(Estudiante estudiante) throws EstudianteYaInscritoException {
-        for (Estudiante e : estudiantes) {
-            if (e.getId() == estudiante.getId()) {
-                throw new EstudianteYaInscritoException("El estudiante ya está matriculado.");
-            }
+    public void matricularEstudiante(Estudiante estudiante) {
+        if (!estudiantes.contains(estudiante)) {
+            estudiantes.add(estudiante);
         }
-        estudiantes.add(estudiante);
     }
 
     @Override
     public void agregarCurso(Curso curso) {
-        for (Curso c : cursos) {
-            if (c.getId() == curso.getId()) {
-                return;
-            }
+        if (!cursos.contains(curso)) {
+            cursos.add(curso);
         }
-        cursos.add(curso);
     }
 
     @Override
     public void inscribirEstudianteCurso(Estudiante estudiante, int idCurso) throws EstudianteYaInscritoException {
+        if (!cursos.stream().anyMatch(curso -> curso.getId() == idCurso)) {
+            throw new IllegalArgumentException("Curso no encontrado");
+        }
         if (!inscripciones.containsKey(idCurso)) {
             inscripciones.put(idCurso, new ArrayList<>());
         }
-        List<Integer> inscritos = inscripciones.get(idCurso);
-        if (inscritos.contains(estudiante.getId())) {
+        ArrayList<Estudiante> inscritos = inscripciones.get(idCurso);
+        if (inscritos.contains(estudiante)) {
             throw new EstudianteYaInscritoException("El estudiante ya está inscrito en este curso.");
-        } else {
-            inscritos.add(estudiante.getId());
         }
+        inscritos.add(estudiante);
     }
 
     @Override
     public void desinscribirEstudianteCurso(int idEstudiante, int idCurso) throws EstudianteNoInscritoEnCursoException {
-        if (inscripciones.containsKey(idCurso)) {
-            List<Integer> inscritos = inscripciones.get(idCurso);
-            if (inscritos.contains(idEstudiante)) {
-                inscritos.remove(Integer.valueOf(idEstudiante));
-            } else {
-                throw new EstudianteNoInscritoEnCursoException("El estudiante no está inscrito en este curso.");
-            }
-        } else {
-            throw new EstudianteNoInscritoEnCursoException("El curso no existe.");
+        if (!cursos.stream().anyMatch(curso -> curso.getId() == idCurso)) {
+            throw new IllegalArgumentException("Curso no encontrado");
         }
+        if (!inscripciones.containsKey(idCurso)) {
+            throw new EstudianteNoInscritoEnCursoException("El estudiante no está inscrito en este curso.");
+        }
+        ArrayList<Estudiante> inscritos = inscripciones.get(idCurso);
+        Estudiante estudiante = estudiantes.stream().filter(e -> e.getId() == idEstudiante).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Estudiante no encontrado"));
+        if (!inscritos.contains(estudiante)) {
+            throw new EstudianteNoInscritoEnCursoException("El estudiante no está inscrito en este curso.");
+        }
+        inscritos.remove(estudiante);
     }
 
-    // Getters y Setters para listas y mapa
-    public List<Estudiante> getEstudiantes() {
-        return estudiantes;
-    }
-
-    public void setEstudiantes(List<Estudiante> estudiantes) {
-        this.estudiantes = estudiantes;
-    }
-
-    public List<Curso> getCursos() {
-        return cursos;
-    }
-
-    public void setCursos(List<Curso> cursos) {
-        this.cursos = cursos;
-    }
-
-    public HashMap<Integer, List<Integer>> getInscripciones() {
-        return inscripciones;
-    }
-
-    public void setInscripciones(HashMap<Integer, List<Integer>> inscripciones) {
-        this.inscripciones = inscripciones;
+    public Estudiante getEstudianteById(int idEstudiante) {
+        return estudiantes.stream().filter(e -> e.getId() == idEstudiante).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Estudiante no encontrado"));
     }
 }
